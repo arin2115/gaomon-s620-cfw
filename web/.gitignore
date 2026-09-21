@@ -1,0 +1,9 @@
+node_modules
+.next
+out
+next-env.d.ts
+tsconfig.tsbuildinfo
+src/generated
+public/s620.bin
+public/firmware.json
+data
