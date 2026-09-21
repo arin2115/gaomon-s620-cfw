@@ -28,7 +28,7 @@ You flash and configure it from your browser: **[tablet.itsarin.dev](https://tab
 You need a Chromium-based browser (Chrome, Edge, Brave, Opera). Firefox and Safari do not support what the site needs.
 
 1. Open [tablet.itsarin.dev](https://tablet.itsarin.dev) and go to the **Flash** tab.
-2. Put the tablet in DFU mode: unplug it, hold **buttons 1 and 4**, plug it in while holding them, then let go.
+2. Put the tablet in DFU mode: unplug it, hold **all the buttons**, plug it in while holding them, then let go.
 3. Choose **Custom firmware**.
 4. Click **Connect and back up**, pick the DFU device in the browser's list, and **download the backup**. Keep that file somewhere safe.
 5. Click **Flash**. It takes well under a minute.
