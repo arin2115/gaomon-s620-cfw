@@ -1,0 +1,3 @@
+tools/**
+web/firmware/**
+dist/*.py

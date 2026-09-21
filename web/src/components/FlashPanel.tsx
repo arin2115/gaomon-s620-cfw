@@ -274,7 +274,10 @@ export function FlashPanel({ supported, onFlashed }: { supported: boolean; onFla
       <section className="card">
         <h2>Troubleshooting</h2>
         <ul className="muted small">
-          <li><b>The DFU device is not listed (Windows):</b> Chrome can only talk to devices that use the WinUSB driver. Install it for the DFU device with Zadig (28E9:0189, driver WinUSB) once.</li>
+          <li><b>The DFU device is not listed (Windows):</b> Chrome can only talk to devices that use the WinUSB driver. Install it for the DFU device with Zadig (28E9:0189, driver WinUSB) once.
+            Only for 28E9:0189, never for 256C:006F (the tablet in normal mode), or the Configure tab cannot find the tablet any more.</li>
+          <li><b>Configure does not find the tablet and Device Manager shows a "USB device" instead of HID:</b> WinUSB is on the wrong device.
+            In Device Manager, uninstall the entries with VID_256C (tick "Attempt to remove the driver for this device"), then unplug and replug the tablet.</li>
           <li><b>Linux:</b> add a udev rule for 28E9:0189 (<code>SUBSYSTEM=="usb", ATTR{"{idVendor}"}=="28e9", ATTR{"{idProduct}"}=="0189", MODE="0666"</code>).</li>
           <li><b>“Unable to claim interface”:</b> close other tools that use the tablet (dfu-util, vendor updaters).</li>
           <li>Something went wrong while flashing: the tablet is still in DFU mode and its bootloader is intact. Flash again, or flash your backup.</li>

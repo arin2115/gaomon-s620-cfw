@@ -17,6 +17,8 @@ static int fc;                      // tracked resonance burst frequency
 static int have_pen, tip;
 static int f256_smooth, phase;
 static int res_invalid_run;         // resonance checks in a row without a peak
+static int release_run, press_run;  // checks in a row that say the tip is up / down
+static uint32_t last_x, last_y;     // last reported position
 static long sx, sy;                 // previous filter output, before flipping
 static int ma_cnt;
 static long ma_x[4], ma_y[4];
@@ -307,7 +309,7 @@ int pentrack_step(pen_sample_t *s)
     if (!have_pen) {
         if (!search())
             return 0;
-        have_pen = 1; tip = 0; f256_smooth = fc * 256; phase = 0; ma_cnt = 0;
+        have_pen = 1; tip = 0; release_run = 0; press_run = 0; f256_smooth = fc * 256; phase = 0; ma_cnt = 0;
         spike_cnt[0] = spike_cnt[1] = 0;
         burst_n = (uint8_t)CFG(BURST_DEF);              // the burst length only limits the signal
         emr_burst_cycles = burst_n;
@@ -330,7 +332,8 @@ int pentrack_step(pen_sample_t *s)
 
     if (scanned < lost_thr) {
         have_pen = 0;
-        s->in_range = 0; s->tip = 0; s->pressure = 0; s->x = s->y = 0;
+        s->in_range = 0; s->tip = 0; s->pressure = 0;
+        s->x = last_x; s->y = last_y;                 // out of range at the last position, not at 0, 0 (the cursor would jump to the corner)
         tip = 0;
         return 1;
     }
@@ -384,9 +387,20 @@ int pentrack_step(pen_sample_t *s)
     int pr = (f256_smooth - f_rest256) * 8191 / (f_full256 - f_rest256);
     if (pr < 0) pr = 0;
     if (pr > 8191) pr = 8191;
-    if (res_invalid_run >= 2) tip = 0;
-    else if (!tip && f256_smooth > 256 * CFG(TIP_ON) / 1000) tip = 1;
-    else if (tip && f256_smooth < 256 * CFG(TIP_OFF) / 1000) tip = 0;
+    if (tip) {
+        // letting go needs several checks in a row, otherwise one noisy check makes a double click
+        int up = res_invalid_run >= CFG(TIP_INVALID_CHECKS) || f256_smooth < 256 * CFG(TIP_OFF) / 1000;
+        if (!up) release_run = 0;
+        else if (do_freq && ++release_run >= CFG(TIP_RELEASE_CHECKS)) tip = 0;
+    } else if (res_invalid_run < 2 && f256_smooth > 256 * CFG(TIP_ON) / 1000) {
+        if (do_freq && ++press_run >= CFG(TIP_PRESS_CHECKS)) {
+            tip = 1;
+            release_run = 0;
+            press_run = 0;
+        }
+    } else {
+        press_run = 0;
+    }
     if (!tip) pr = 0;
 
     long xx = raw_x, yy = raw_y;
@@ -397,7 +411,7 @@ int pentrack_step(pen_sample_t *s)
     if (CFG(FLIP_Y)) yy = Y_MAX - yy;
 
     s->in_range = 1; s->tip = tip; s->pressure = (uint16_t)(CFG(PRESSURE_GRADED) ? pr : (tip ? 8191 : 0));
-    s->x = (uint32_t)xx; s->y = (uint32_t)yy;
+    s->x = last_x = (uint32_t)xx; s->y = last_y = (uint32_t)yy;
     return 1;
 }
 

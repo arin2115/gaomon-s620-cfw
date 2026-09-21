@@ -6,13 +6,15 @@ export type Group = { id: string; title: string; note?: string; advanced?: boole
 export const SCALE: Record<string, number> = { TIP_ON: 1000, TIP_OFF: 1000, F_REST: 1000, F_FULL: 1000 };
 export const UNIT: Record<string, string> = {
   GRID_MARGIN: "µs", FREQ_PAUSE_US: "µs", GAIN_SETTLE_US: "µs", SETTLE: "µs", KEY_POLL_MS: "ms",
+  MAX_RATE: "Hz",
   HOVER_ZONE_HI: "units", HOVER_ZONE_MID: "units", HOVER_ZONE_LO: "units",
 };
 
 export const GROUPS: Group[] = [
+  { id: "rate", title: "Report rate", note: "The tablet sends at most this many reports per second to the computer. Lower it if the computer or the game copes badly with 1000 Hz.", names: ["MAX_RATE"] },
   { id: "smoothing", title: "Smoothing", note: "Fewer smoothing means the pen follows faster but shows more jitter.", names: ["SMOOTH_EMA", "SMOOTH_MA", "SMOOTH_FULL_AMP", "SMOOTH_MIN_W"] },
   { id: "hover", title: "Hover dead-zone", note: "While the pen hovers, movements smaller than this radius are ignored (200 units = 1 mm).", names: ["HOVER_ZONE_HI", "HOVER_ZONE_MID", "HOVER_ZONE_LO"] },
-  { id: "pen", title: "Pen and pressure", names: ["TIP_ON", "TIP_OFF", "PRESSURE_GRADED", "F_REST", "F_FULL", "FLIP_X", "FLIP_Y"] },
+  { id: "pen", title: "Pen and pressure", names: ["TIP_ON", "TIP_OFF", "TIP_PRESS_CHECKS", "TIP_RELEASE_CHECKS", "TIP_INVALID_CHECKS", "PRESSURE_GRADED", "F_REST", "F_FULL", "FLIP_X", "FLIP_Y"] },
   { id: "keys", title: "Express keys and LED", names: ["KEYS_ENABLED", "KEY_POLL_MS", "LED_IDLE", "LED_ACTIVE", "KEY_LO_MAX", "KEY_HI_MIN", "KEY_HI_MAX", "KEY_IDLE"] },
   { id: "tracking", title: "Tracking", advanced: true, names: ["FREQ_EVERY", "DET_THRESHOLD", "LOST_THRESHOLD", "AMP_HIGH", "AMP_LOW"] },
   {
@@ -32,9 +34,9 @@ export function groupsWithLeftovers(): Group[] {
 }
 
 const LABELS: Record<string, string> = {
-  SMOOTH_EMA: "Smoothing weight", SMOOTH_MA: "Averaged reports", SMOOTH_FULL_AMP: "Full-weight signal", SMOOTH_MIN_W: "Minimum weight",
+  MAX_RATE: "Max report rate", SMOOTH_EMA: "Smoothing weight", SMOOTH_MA: "Averaged reports", SMOOTH_FULL_AMP: "Full-weight signal", SMOOTH_MIN_W: "Minimum weight",
   HOVER_ZONE_HI: "Dead-zone, strong signal", HOVER_ZONE_MID: "Dead-zone, medium signal", HOVER_ZONE_LO: "Dead-zone, weak signal",
-  TIP_ON: "Tip down above", TIP_OFF: "Tip up below", F_REST: "Resonance at rest", F_FULL: "Resonance at full pressure",
+  TIP_ON: "Tip down above", TIP_OFF: "Tip up below", TIP_PRESS_CHECKS: "Press checks", TIP_RELEASE_CHECKS: "Release checks", TIP_INVALID_CHECKS: "No-peak checks", F_REST: "Resonance at rest", F_FULL: "Resonance at full pressure",
   PRESSURE_GRADED: "Graded pressure", FLIP_X: "Mirror X", FLIP_Y: "Mirror Y",
   FREQ_EVERY: "Pressure check interval", DET_THRESHOLD: "Detection threshold", LOST_THRESHOLD: "Lost threshold", AMP_HIGH: "Limiter, upper", AMP_LOW: "Limiter, lower",
   BURST_MIN: "Shortest burst", BURST_DEF: "Normal burst", BURST_MAX: "Longest burst", SETTLE: "Settle time", FREQ_BURST: "Pressure burst", SEARCH_BURST: "Search burst",

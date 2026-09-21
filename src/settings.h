@@ -15,10 +15,10 @@
     X(HOVER_ZONE_HI,    50,   0, 1000, "Hover dead-zone radius, strong signal (units, 200 = 1 mm)") \
     X(HOVER_ZONE_MID,   90,   0, 1000, "Hover dead-zone radius, medium signal") \
     X(HOVER_ZONE_LO,   150,   0, 1000, "Hover dead-zone radius, weak signal") \
-    X(TIP_ON,         8050, 6000,12000, "Tip goes down above this resonance index (x1000; 8050 = 8.05)") \
-    X(TIP_OFF,        7950, 6000,12000, "Tip goes up below this resonance index (x1000)") \
-    X(F_REST,         8000, 6000,12000, "Resonance index at zero pressure (x1000), only used for graded pressure") \
-    X(F_FULL,         9580, 6000,12000, "Resonance index at full pressure (x1000), only used for graded pressure") \
+    X(TIP_ON,         7980, 6000,12000, "Tip goes down above this resonance index (x1000; 8050 = 8.05)") \
+    X(TIP_OFF,        7770, 6000,12000, "Tip goes up below this resonance index (x1000)") \
+    X(F_REST,         7800, 6000,12000, "Resonance index at zero pressure (x1000), only used for graded pressure") \
+    X(F_FULL,         9680, 6000,12000, "Resonance index at full pressure (x1000), only used for graded pressure") \
     X(PRESSURE_GRADED,   0,   0,    1, "0 = pressure is only 0 / 8191 (tip up / down), 1 = graded from the resonance shift") \
     X(FLIP_X,            0,   0,    1, "Mirror the X axis") \
     X(FLIP_Y,            1,   0,    1, "Mirror the Y axis") \
@@ -47,7 +47,11 @@
     X(KEY_LO_MAX,     1000,   0, 4095, "Key ladder: ADC value at or below this = key 1 / 3") \
     X(KEY_HI_MIN,     1100,   0, 4095, "Key ladder: lower edge of key 2 / 4") \
     X(KEY_HI_MAX,     1800,   0, 4095, "Key ladder: upper edge of key 2 / 4") \
-    X(KEY_IDLE,       3851,   0, 4095, "Key ladder: ADC value at and above this = nothing pressed")
+    X(KEY_IDLE,       3851,   0, 4095, "Key ladder: ADC value at and above this = nothing pressed") \
+    X(TIP_RELEASE_CHECKS, 1,  1,   10, "Tip goes up only after this many pressure checks in a row say so (stops double clicks)") \
+    X(TIP_INVALID_CHECKS, 16, 1,  100, "Tip goes up after this many pressure checks in a row found no clear resonance peak (it happens at firm pressure)") \
+    X(TIP_PRESS_CHECKS,   1,  1,   10, "Tip goes down only after this many pressure checks in a row are above the threshold (stops false clicks)") \
+    X(MAX_RATE,        1000, 50, 1000, "Highest report rate sent to the computer (Hz). The tablet still scans as fast as it can, it just sends fewer reports")
 
 enum {
 #define X(n, d, lo, hi, s) SET_##n,
@@ -58,8 +62,10 @@ enum {
 
 #define SETTINGS_VERSION 2                       // 2: the report carries a handled-commands counter and USB diagnostics
 #define SETTINGS_REPORT_ID 0x30
-#define SETTINGS_DIAG 90                         // payload[90..92]: USB diagnostics (usb.c)
 #define SETTINGS_PAYLOAD 95                      // bytes after the report ID; the values start at offset 4 (uint16, little endian)
+#define SETTINGS_DIAG (SETTINGS_PAYLOAD - 3)     // the last 3 bytes: USB diagnostics (usb.c). At most 44 settings fit.
+
+_Static_assert(4 + 2 * SET_COUNT <= SETTINGS_DIAG, "the settings no longer fit in the report before the diagnostics");
 
 extern uint16_t cfg[SET_COUNT];
 #define CFG(n) ((int)cfg[SET_##n])

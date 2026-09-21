@@ -47,7 +47,7 @@ export function decode(data: Uint8Array): Snapshot {
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
   const values: Values = {};
   TABLE.forEach((s, i) => (values[s.name] = view.getUint16(4 + 2 * i, true)));
-  return { values, status: data[0], handled: data[3], diag: { writes: data[90], bytes: data[91], wLength: data[92] } };
+  return { values, status: data[0], handled: data[3], diag: { writes: data[SETTINGS_PAYLOAD - 3], bytes: data[SETTINGS_PAYLOAD - 2], wLength: data[SETTINGS_PAYLOAD - 1] } };
 }
 
 export function statusText(status: number): string {

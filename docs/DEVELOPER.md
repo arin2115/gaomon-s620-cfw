@@ -29,17 +29,8 @@ The build is reproducible: the image in `dist/` is what `build.py` produces from
 
 ## Settings (runtime, saved in flash)
 Every tunable (smoothing, hover dead-zone, tip/pressure thresholds, axis flips, resonance-check rate, limiter and timing values, active
-coil area, LED brightness, express-key ladder, ...) is one 16-bit value in a table (`src/settings.h`, 40 values). They are changed over
-USB with a vendor feature report (ID 0x30, a third HID collection on interface 0, usage page 0xFF02), using `tools/s620cfg.py`
-(`pip install hidapi`, close OpenTabletDriver's exclusive access if it grabs the interface):
-```
-py tools/s620cfg.py show                          # all values, defaults, limits, descriptions
-py tools/s620cfg.py set SMOOTH_EMA=190            # takes effect at once, lost at unplug
-py tools/s620cfg.py set SMOOTH_EMA=190 --save     # ... and kept in flash
-py tools/s620cfg.py area 25 20 35 26 --save       # track only this rectangle (mm, as reported), like a small osu! area
-py tools/s620cfg.py area full --save
-py tools/s620cfg.py save | reload | defaults [--save] | factory
-```
+coil area, LED brightness, express-key ladder, ...) is one 16-bit value in a table (`src/settings.h`, 44 values). They are changed over
+USB with a vendor feature report (ID 0x30, a third HID collection on interface 0, usage page 0xFF02), using the website (`web/`).
 - Storage: the last flash page (0x0800F800) holds one record (magic, version, count, values, CRC32). It is only written by an explicit save
   (the page erase stalls the tablet for tens of ms). A missing or corrupt record means the defaults. Flashing a full 64 KB image erases it.
 - Values are clamped to their limits, so a bad value cannot brick the tablet; `factory` (or a reflash) restores the defaults.
@@ -67,7 +58,7 @@ src/pentrack.c/.h  pen search, window scan, position estimator, filters, resonan
 src/pen.c/.h       HID report builders
 src/keys.c/.h      express-key ladders (decoded like the original)
 src/settings.c/.h  runtime settings table, flash load/save, USB report payload
-tools/s620cfg.py   command-line tool for the settings
+tools/pressure_cal.py   guided pressure/tip calibration (uses the settings report)
 web/               browser tool: flashing and settings
 src/link.ld        linker script (app at 0x08004000, 4 KB RAM)
 bootloader/        the tablet's original 16 KB DFU bootloader

@@ -204,14 +204,17 @@ static int status_led(uint32_t t, int n, int m)
 
 // One report per USB frame with the freshest sample. Also called from inside the long resonance check so no frame is missed.
 static pen_sample_t latest;
-static int have_latest, sof_pending;
+static int have_latest, sof_pending, rate_credit;
 
 static uint8_t key_mask;
 static int key_pending;
 
 static void service_usb(void)
 {
-    if (usb_sof()) sof_pending = 1;
+    if (usb_sof()) {                                 // a report slot opens on MAX_RATE of every 1000 frames
+        rate_credit += CFG(MAX_RATE);
+        if (rate_credit >= 1000) { rate_credit -= 1000; sof_pending = 1; }
+    }
     if (key_pending && sof_pending) {                // a key change takes this frame's slot
         if (usb_report_mode() != 8) key_pending = 0;   // key reports only exist in raw mode
         else {

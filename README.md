@@ -64,6 +64,12 @@ Enter DFU mode (buttons 1 and 4 while plugging in) and flash again. The tablet's
 **The browser does not list the DFU device (Windows).**
 Chrome can only talk to devices that use the WinUSB driver. Install it once with [Zadig](https://zadig.akeo.ie/): put the tablet in DFU mode,
 open Zadig, choose Options > List All Devices, select the device with ID 28E9 0189, pick WinUSB as the driver and click Install.
+**Only install it on 28E9 0189.** Never on 256C 006F (the tablet in normal mode): that removes the tablet's HID driver, and the Configure
+tab cannot find it any more.
+
+**The Configure tab does not find the tablet, and Device Manager shows it as a "USB device" instead of HID.**
+WinUSB was installed on the wrong device. In Device Manager, right-click the entries with VID_256C, choose Uninstall device and tick
+"Attempt to remove the driver for this device". Unplug the tablet, plug it back in and Windows installs the HID driver again.
 
 **The browser does not list the DFU device (Linux).**
 Add a udev rule so you are allowed to use it:
@@ -74,6 +80,12 @@ Close other programs that use the tablet (dfu-util, vendor tools).
 
 **The Configure tab does not find the tablet.**
 Close OpenTabletDriver and try again. Make sure the custom firmware is flashed and you replugged the tablet after flashing.
+
+**The pen clicks twice, or the click is glitchy.**
+Run the calibration script: `pip install hidapi numpy`, close OpenTabletDriver, then `py tools/pressure_cal.py` in the repository folder. It
+tells you what to do (hold the pen at different heights and pressures, it beeps when to start and stop), works out the settings for your
+pen and tablet, tests them with you and only saves them if you say yes. If it goes wrong, `py tools/pressure_cal.py --restore` puts your old
+settings back.
 
 **The LED flashes in a pattern.**
 Long solid light, then a number of blinks, is an error code: 1 crystal, 2 clock, 3 clock switch, 4 to 6 USB start-up, 7 crash, 8 timer. Replug the
