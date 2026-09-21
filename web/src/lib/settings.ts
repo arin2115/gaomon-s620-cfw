@@ -121,42 +121,27 @@ export class TabletSettings {
   }
 }
 
-// ---- active area <-> coil positions (same maths as tools/s620cfg.py) ----
+// ---- active area ----
 
-export const TABLET = { widthMm: 165.1, heightMm: 101.6, xMax: 33020, yMax: 20320, xCoils: 30, yCoils: 19 };
+export const TABLET = { widthMm: 165.1, heightMm: 101.6, xMax: 33020, yMax: 20320 };
 const UNITS_PER_MM = 200;
-
-// A coil position's cell starts at pitch * (pos - 1) + offset (raw units, before flipping)
-const X_PITCH = 1179, X_OFFSET = 4, Y_PITCH = 1195, Y_OFFSET = 2;
-
-function coilPos(raw: number, offset: number, pitch: number, count: number): number {
-  const k = Math.floor((raw - offset) / pitch) + 2;
-  return Math.max(0, Math.min(count - 1, k - 1));
-}
 
 export type Rect = { x: number; y: number; w: number; h: number };   // mm, as reported (origin top left)
 
-export function areaToCoils(r: Rect, flipX: boolean, flipY: boolean) {
-  let ux0 = Math.round(r.x * UNITS_PER_MM), ux1 = Math.round((r.x + r.w) * UNITS_PER_MM);
-  let uy0 = Math.round(r.y * UNITS_PER_MM), uy1 = Math.round((r.y + r.h) * UNITS_PER_MM);
-  if (flipX) [ux0, ux1] = [TABLET.xMax - ux1, TABLET.xMax - ux0];
-  if (flipY) [uy0, uy1] = [TABLET.yMax - uy1, TABLET.yMax - uy0];
-  ux0 = Math.max(ux0, 0); ux1 = Math.min(ux1, TABLET.xMax);
-  uy0 = Math.max(uy0, 0); uy1 = Math.min(uy1, TABLET.yMax);
-  // one coil of margin each side, so edge positions keep their neighbours for the estimator
+export function areaToValues(r: Rect) {
   return {
-    X_MIN: Math.max(0, coilPos(ux0, X_OFFSET, X_PITCH, TABLET.xCoils) - 1),
-    X_MAX: Math.min(TABLET.xCoils - 1, coilPos(ux1, X_OFFSET, X_PITCH, TABLET.xCoils) + 1),
-    Y_MIN: Math.max(0, coilPos(uy0, Y_OFFSET, Y_PITCH, TABLET.yCoils) - 1),
-    Y_MAX: Math.min(TABLET.yCoils - 1, coilPos(uy1, Y_OFFSET, Y_PITCH, TABLET.yCoils) + 1),
+    AREA_X0: Math.round(r.x * UNITS_PER_MM),
+    AREA_X1: Math.round((r.x + r.w) * UNITS_PER_MM),
+    AREA_Y0: Math.round(r.y * UNITS_PER_MM),
+    AREA_Y1: Math.round((r.y + r.h) * UNITS_PER_MM),
   };
 }
 
-// The rectangle (mm, as reported) that the current coil range covers
-export function coilsToArea(v: Values): Rect {
-  const rawX0 = Math.max(0, X_PITCH * (v.X_MIN - 1) + X_OFFSET), rawX1 = Math.min(TABLET.xMax, X_PITCH * v.X_MAX + X_OFFSET);
-  const rawY0 = Math.max(0, Y_PITCH * (v.Y_MIN - 1) + Y_OFFSET), rawY1 = Math.min(TABLET.yMax, Y_PITCH * v.Y_MAX + Y_OFFSET);
-  const [x0, x1] = v.FLIP_X ? [TABLET.xMax - rawX1, TABLET.xMax - rawX0] : [rawX0, rawX1];
-  const [y0, y1] = v.FLIP_Y ? [TABLET.yMax - rawY1, TABLET.yMax - rawY0] : [rawY0, rawY1];
-  return { x: x0 / UNITS_PER_MM, y: y0 / UNITS_PER_MM, w: (x1 - x0) / UNITS_PER_MM, h: (y1 - y0) / UNITS_PER_MM };
+export function areaFromValues(v: Values): Rect {
+  return {
+    x: v.AREA_X0 / UNITS_PER_MM,
+    y: v.AREA_Y0 / UNITS_PER_MM,
+    w: (v.AREA_X1 - v.AREA_X0) / UNITS_PER_MM,
+    h: (v.AREA_Y1 - v.AREA_Y0) / UNITS_PER_MM,
+  };
 }

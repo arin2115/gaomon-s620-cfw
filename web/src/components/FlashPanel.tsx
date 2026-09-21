@@ -203,7 +203,7 @@ export function FlashPanel({ supported, onFlashed }: { supported: boolean; onFla
         <h2>1. Put the tablet in DFU mode</h2>
         <ol className="steps">
           <li>Unplug the tablet.</li>
-          <li>Hold <b>buttons 1 and 4</b>.</li>
+          <li>Hold <b>all the buttons</b>.</li>
           <li>Plug it in while holding them, then let go.</li>
         </ol>
         <p className="muted small">

@@ -91,8 +91,8 @@ static void sanitize(uint16_t *v)
 {
     for (int i = 0; i < SET_COUNT; i++)
         if (v[i] < LO[i]) v[i] = LO[i]; else if (v[i] > HI[i]) v[i] = HI[i];
-    if (v[SET_X_MIN] > v[SET_X_MAX]) v[SET_X_MIN] = v[SET_X_MAX];
-    if (v[SET_Y_MIN] > v[SET_Y_MAX]) v[SET_Y_MIN] = v[SET_Y_MAX];
+    if (v[SET_AREA_X0] > v[SET_AREA_X1]) v[SET_AREA_X0] = v[SET_AREA_X1];
+    if (v[SET_AREA_Y0] > v[SET_AREA_Y1]) v[SET_AREA_Y0] = v[SET_AREA_Y1];
     if (v[SET_BURST_MIN] > v[SET_BURST_DEF]) v[SET_BURST_MIN] = v[SET_BURST_DEF];
     if (v[SET_BURST_MAX] < v[SET_BURST_DEF]) v[SET_BURST_MAX] = v[SET_BURST_DEF];
     if (v[SET_TIP_OFF] > v[SET_TIP_ON]) v[SET_TIP_OFF] = v[SET_TIP_ON];
@@ -104,12 +104,16 @@ static void sanitize(uint16_t *v)
 static int load_record(uint16_t *out)
 {
     const uint8_t *f = FLASH_BYTES;
-    if (rd32(f) != MAGIC || rd16(f + 4) < 1 || rd16(f + 4) > SETTINGS_VERSION) return 0;   // older records have the same layout
+    if (rd32(f) != MAGIC || rd16(f + 4) < 1 || rd16(f + 4) > SETTINGS_VERSION) return 0;   // older records have the same layout, apart from the area
     int count = rd16(f + 6);
     if (count < 1 || count > 96) return 0;
     uint32_t co = crc_offset(count);
     if (rd32(f + co) != crc32(f, (int)co)) return 0;
     for (int i = 0; i < SET_COUNT; i++) out[i] = i < count ? (uint16_t)rd16(f + 8 + 2 * i) : DEF[i];
+    if (rd16(f + 4) < 3) {                                            // before version 3 the area was a coil range: back to the whole tablet
+        out[SET_AREA_X0] = DEF[SET_AREA_X0]; out[SET_AREA_X1] = DEF[SET_AREA_X1];
+        out[SET_AREA_Y0] = DEF[SET_AREA_Y0]; out[SET_AREA_Y1] = DEF[SET_AREA_Y1];
+    }
     sanitize(out);
     return 1;
 }

@@ -1,28 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { TABLET, areaToCoils, coilsToArea, type Rect, type Values } from "../lib/settings";
+import { TABLET, areaFromValues, areaToValues, type Rect, type Values } from "../lib/settings";
 
 type Props = { values: Values; onChange: (patch: Values) => void; disabled?: boolean };
 
-// Limits tracking to a rectangle of the tablet. The tablet still reports absolute positions over its whole surface.
+// Limits the pen to a rectangle of the tablet: outside it the tablet reports the pen as out of range.
+// Positions still are absolute over the whole tablet.
 export function AreaEditor({ values, onChange, disabled }: Props) {
-  const current = coilsToArea(values);
+  const current = areaFromValues(values);
   const [rect, setRect] = useState<Rect>(current);
-  const full = values.X_MIN === 0 && values.X_MAX === TABLET.xCoils - 1 && values.Y_MIN === 0 && values.Y_MAX === TABLET.yCoils - 1;
+  const full = values.AREA_X0 === 0 && values.AREA_X1 === TABLET.xMax && values.AREA_Y0 === 0 && values.AREA_Y1 === TABLET.yMax;
 
   // follow changes that come from outside (reading the tablet, presets, reset)
   useEffect(() => {
-    setRect(coilsToArea(values));
+    setRect(areaFromValues(values));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [values.X_MIN, values.X_MAX, values.Y_MIN, values.Y_MAX, values.FLIP_X, values.FLIP_Y]);
+  }, [values.AREA_X0, values.AREA_X1, values.AREA_Y0, values.AREA_Y1]);
 
   const apply = (r: Rect | null) => {
-    onChange(
-      r
-        ? areaToCoils(r, !!values.FLIP_X, !!values.FLIP_Y)
-        : { X_MIN: 0, X_MAX: TABLET.xCoils - 1, Y_MIN: 0, Y_MAX: TABLET.yCoils - 1 },
-    );
+    onChange(r ? areaToValues(r) : { AREA_X0: 0, AREA_X1: TABLET.xMax, AREA_Y0: 0, AREA_Y1: TABLET.yMax });
   };
 
   const field = (key: keyof Rect, text: string) => (
@@ -49,8 +46,8 @@ export function AreaEditor({ values, onChange, disabled }: Props) {
     <section className="card">
       <h2>Active area</h2>
       <p className="muted small">
-        Only coils inside this rectangle are tracked, a pen outside it counts as out of range. Positions are in mm as reported (top left = 0, 0).
-        The coil grid is about 6 mm, so the real edges snap to whole coils plus one coil of margin.
+        A pen outside this rectangle counts as out of range, right up to the edge you set. Positions are in mm as the tablet reports them
+        (top left = 0, 0).
       </p>
       <div className="area">
         <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Tablet with the active area">
@@ -69,8 +66,7 @@ export function AreaEditor({ values, onChange, disabled }: Props) {
             <button className="ghost" onClick={() => apply(null)} disabled={disabled}>Whole tablet</button>
           </div>
           <p className="muted small">
-            Now: X coils {values.X_MIN}–{values.X_MAX}, Y coils {values.Y_MIN}–{values.Y_MAX}
-            {full ? " (whole tablet)" : ` ≈ ${current.w.toFixed(0)} × ${current.h.toFixed(0)} mm at ${current.x.toFixed(0)}, ${current.y.toFixed(0)}`}
+            Now: {full ? "the whole tablet" : `${current.w.toFixed(1)} × ${current.h.toFixed(1)} mm at ${current.x.toFixed(1)}, ${current.y.toFixed(1)}`}
           </p>
         </div>
       </div>

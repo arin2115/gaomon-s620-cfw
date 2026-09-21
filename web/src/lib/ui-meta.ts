@@ -24,7 +24,7 @@ export const GROUPS: Group[] = [
   },
 ];
 
-const AREA = new Set(["X_MIN", "X_MAX", "Y_MIN", "Y_MAX"]);
+const AREA = new Set(["AREA_X0", "AREA_X1", "AREA_Y0", "AREA_Y1"]);
 
 // Settings that no group lists (added by newer firmware) still show up
 export function groupsWithLeftovers(): Group[] {

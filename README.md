@@ -44,8 +44,8 @@ On Windows the tablet in DFU mode needs the WinUSB driver, or the browser will n
 A few settings people usually want:
 
 - **Smoothing weight**: higher means less smoothing. The default is 150 out of 256.
-- **Active area**: type the part of the tablet you use, in millimetres, and click **Set area**. The tablet snaps the edges to its coil grid
-  (about 6 mm) and adds one coil on each side, so the area is a bit bigger than what you typed.
+- **Active area**: type the part of the tablet you use, in millimetres, and click **Set area**. Outside it the pen counts as out of range,
+  right up to the edge you set.
 - **Mirror X / Mirror Y**: if an axis is the wrong way round.
 
 Everything is reset with **Defaults**. **Erase saved** also deletes what is stored on the tablet.

@@ -19,6 +19,9 @@ static int f256_smooth, phase;
 static int res_invalid_run;         // resonance checks in a row without a peak
 static int release_run, press_run;  // checks in a row that say the tip is up / down
 static uint32_t last_x, last_y;     // last reported position
+static int lim_x0, lim_x1, lim_y0, lim_y1;          // coil positions the tracker may use: the area plus one coil
+static long area_x0, area_x1, area_y0, area_y1;     // the active area in raw position units (before mirroring)
+static int was_in;                                  // the last report said "in range"
 static long sx, sy;                 // previous filter output, before flipping
 static int ma_cnt;
 static long ma_x[4], ma_y[4];
@@ -39,6 +42,26 @@ static void init_alias(void)
             if (Y_COILS[j].pb_and == Y_COILS[i].pb_and && Y_COILS[j].pa_or == Y_COILS[i].pa_or) { first_y[i] = (uint8_t)j; break; }
     }
     inited = 1;
+}
+
+static int coil_pos(long raw, int off, int pitch, int n)
+{
+    if (raw < off) return 0;
+    int p = (int)((raw - off) / pitch) + 1;
+    return p < n ? p : n - 1;
+}
+
+// The active area is set in reported coordinates; the tracker works in raw ones, so undo the mirroring.
+static void area_update(void)
+{
+    long x0 = CFG(AREA_X0), x1 = CFG(AREA_X1), y0 = CFG(AREA_Y0), y1 = CFG(AREA_Y1);
+    if (CFG(FLIP_X)) { long t = X_MAX - x1; x1 = X_MAX - x0; x0 = t; }
+    if (CFG(FLIP_Y)) { long t = Y_MAX - y1; y1 = Y_MAX - y0; y0 = t; }
+    area_x0 = x0; area_x1 = x1; area_y0 = y0; area_y1 = y1;
+    lim_x0 = coil_pos(x0, 4, 1179, X_COILS_N) - 1; if (lim_x0 < 0) lim_x0 = 0;
+    lim_x1 = coil_pos(x1, 4, 1179, X_COILS_N) + 1; if (lim_x1 > X_COILS_N - 1) lim_x1 = X_COILS_N - 1;
+    lim_y0 = coil_pos(y0, 2, 1195, Y_COILS_N) - 1; if (lim_y0 < 0) lim_y0 = 0;
+    lim_y1 = coil_pos(y1, 2, 1195, Y_COILS_N) + 1; if (lim_y1 > Y_COILS_N - 1) lim_y1 = Y_COILS_N - 1;
 }
 
 static inline uint16_t mx(int p, int f) { return p < 0 || p >= X_COILS_N ? 0 : emr_self(&X_COILS[p], f); }
@@ -85,8 +108,8 @@ static int search(void)
         if (ay[i] > py) py = ay[i];
     }
     restore_fast(saved);
-    for (int i = 0; i < X_COILS_N; i++) if (i < CFG(X_MIN) || i > CFG(X_MAX)) ax[i] = 0;     // ignore coils outside the active area
-    for (int i = 0; i < Y_COILS_N; i++) if (i < CFG(Y_MIN) || i > CFG(Y_MAX)) ay[i] = 0;
+    for (int i = 0; i < X_COILS_N; i++) if (i < lim_x0 || i > lim_x1) ax[i] = 0;     // ignore coils outside the active area
+    for (int i = 0; i < Y_COILS_N; i++) if (i < lim_y0 || i > lim_y1) ay[i] = 0;
     px = py = 0;
     for (int i = 0; i < X_COILS_N; i++) if (ax[i] > px) px = ax[i];
     for (int i = 0; i < Y_COILS_N; i++) if (ay[i] > py) py = ay[i];
@@ -248,7 +271,7 @@ static void scan_y(void)
     if (iy <= 2 && pos_y > 0) sy_ = -1; else if (iy >= 4 && pos_y < Y_COILS_N - 1) sy_ = 1;
     oy = sy_ < 0 ? 0 : sy_ > 0 ? 2 : 1;
     for (int i = 0; i < 5; i++) win_y[i] = oy + i < 6 ? by[oy + i] : 0;
-    if (pos_y + sy_ < CFG(Y_MIN) || pos_y + sy_ > CFG(Y_MAX)) sy_ = 0;      // keep the window centre inside the active area
+    if (pos_y + sy_ < lim_y0 || pos_y + sy_ > lim_y1) sy_ = 0;      // keep the window centre inside the active area
     pos_y += sy_;
     int ya = win_y[1], y1 = win_y[2], yc = win_y[3], ye = yc >= ya ? win_y[4] : win_y[0];
     int j = pos_y + 1;
@@ -274,7 +297,7 @@ static void scan_x(void)
     if (ix <= 2 && pos_x > 0) sx_ = -1; else if (ix >= 4 && pos_x < X_COILS_N - 1) sx_ = 1;
     ox = sx_ < 0 ? 0 : sx_ > 0 ? 2 : 1;
     for (int i = 0; i < 5; i++) win_x[i] = ox + i < 6 ? bx[ox + i] : 0;
-    if (pos_x + sx_ < CFG(X_MIN) || pos_x + sx_ > CFG(X_MAX)) sx_ = 0;
+    if (pos_x + sx_ < lim_x0 || pos_x + sx_ > lim_x1) sx_ = 0;
     pos_x += sx_;
     int xa = win_x[1], x1 = win_x[2], xc = win_x[3], xe = xc >= xa ? win_x[4] : win_x[0];
     int k = pos_x + 1;
@@ -295,6 +318,7 @@ void pentrack_settings_changed(void)
     burst_n = (uint8_t)CFG(BURST_DEF);
     emr_burst_cycles = burst_n;
     ma_cnt = 0;
+    area_update();
     lost_thr = CFG(LOST_THRESHOLD);
     leak_est = 0;
 }
@@ -304,7 +328,7 @@ void (*pentrack_idle_hook)(void);
 
 int pentrack_step(pen_sample_t *s)
 {
-    if (!inited) init_alias();
+    if (!inited) { init_alias(); area_update(); }
 
     if (!have_pen) {
         if (!search())
@@ -332,9 +356,11 @@ int pentrack_step(pen_sample_t *s)
 
     if (scanned < lost_thr) {
         have_pen = 0;
+        tip = 0;
+        if (!was_in) return 0;                        // already reported as out of range
+        was_in = 0;
         s->in_range = 0; s->tip = 0; s->pressure = 0;
         s->x = last_x; s->y = last_y;                 // out of range at the last position, not at 0, 0 (the cursor would jump to the corner)
-        tip = 0;
         return 1;
     }
 
@@ -407,6 +433,17 @@ int pentrack_step(pen_sample_t *s)
     filter_position(&xx, &yy, x1 + y1, x1 < y1 ? x1 : y1, !tip);      // dead-zone only while hovering
     if (xx > X_MAX) xx = X_MAX;
     if (yy > Y_MAX) yy = Y_MAX;
+    // Outside the active area the pen counts as out of range (leaving needs 0.5 mm more than entering, so the edge does not flicker)
+    long m = was_in ? 100 : 0;
+    if (xx < area_x0 - m || xx > area_x1 + m || yy < area_y0 - m || yy > area_y1 + m) {
+        tip = 0; release_run = 0; press_run = 0;
+        if (!was_in) return 0;
+        was_in = 0;
+        s->in_range = 0; s->tip = 0; s->pressure = 0;
+        s->x = last_x; s->y = last_y;
+        return 1;
+    }
+    was_in = 1;
     if (CFG(FLIP_X)) xx = X_MAX - xx;
     if (CFG(FLIP_Y)) yy = Y_MAX - yy;
 

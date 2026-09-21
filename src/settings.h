@@ -36,10 +36,10 @@
     X(GRID_MARGIN,       6,   0,   40, "Slack added to the measurement grid period (us)") \
     X(FREQ_PAUSE_US,    40,   0,  500, "Ring-down pause after the resonance measurement (us)") \
     X(GAIN_SETTLE_US,   60,   0,  500, "Time for the gain switch to settle (us)") \
-    X(X_MIN,             0,   0,   29, "Active area: lowest X coil position the pen may be tracked at (0..29)") \
-    X(X_MAX,            29,   0,   29, "Active area: highest X coil position (0..29)") \
-    X(Y_MIN,             0,   0,   18, "Active area: lowest Y coil position (0..18)") \
-    X(Y_MAX,            18,   0,   18, "Active area: highest Y coil position (0..18)") \
+    X(AREA_X0,           0,   0,33020, "Active area: left edge (units, 200 = 1 mm, as the tablet reports X)") \
+    X(AREA_X1,       33020,   0,33020, "Active area: right edge") \
+    X(AREA_Y0,           0,   0,20320, "Active area: top edge (units, 200 = 1 mm, as the tablet reports Y)") \
+    X(AREA_Y1,       20320,   0,20320, "Active area: bottom edge") \
     X(LED_IDLE,        100,   0, 1000, "LED brightness when idle (0..1000)") \
     X(LED_ACTIVE,      940,   0, 1000, "LED brightness while the pen is tracked or a key is down") \
     X(KEYS_ENABLED,      1,   0,    1, "Express keys on/off") \
@@ -60,7 +60,7 @@ enum {
     SET_COUNT
 };
 
-#define SETTINGS_VERSION 2                       // 2: the report carries a handled-commands counter and USB diagnostics
+#define SETTINGS_VERSION 3                       // 2: handled-commands counter and USB diagnostics, 3: the active area is in position units
 #define SETTINGS_REPORT_ID 0x30
 #define SETTINGS_PAYLOAD 95                      // bytes after the report ID; the values start at offset 4 (uint16, little endian)
 #define SETTINGS_DIAG (SETTINGS_PAYLOAD - 3)     // the last 3 bytes: USB diagnostics (usb.c). At most 44 settings fit.

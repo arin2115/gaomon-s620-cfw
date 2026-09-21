@@ -34,8 +34,10 @@ USB with a vendor feature report (ID 0x30, a third HID collection on interface 0
 - Storage: the last flash page (0x0800F800) holds one record (magic, version, count, values, CRC32). It is only written by an explicit save
   (the page erase stalls the tablet for tens of ms). A missing or corrupt record means the defaults. Flashing a full 64 KB image erases it.
 - Values are clamped to their limits, so a bad value cannot brick the tablet; `factory` (or a reflash) restores the defaults.
-- The active area limits which coils the pen is tracked on (a pen outside it counts as out of range); reported coordinates stay
-  absolute over the whole tablet, and the scan time per report does not change.
+- The active area (`AREA_X0..AREA_Y1`, position units as reported) does two things: the tracker only searches and follows coils inside it
+  (plus one coil), and a pen whose position is outside it is reported as out of range once (leaving needs 0.5 mm more than entering).
+  Reported coordinates stay absolute over the whole tablet, and the scan time per report does not change. Saved records older than
+  settings version 3 keep everything but the area, which goes back to the whole tablet.
 - New settings are appended to the list in `settings.h`; older saved records stay valid (missing values take their defaults).
 - The USB `bcdDevice` is 1.13 (the original: 1.12) so that Windows does not reuse a cached copy of the old report descriptor.
   After flashing this firmware for the first time, unplug and replug the tablet.
