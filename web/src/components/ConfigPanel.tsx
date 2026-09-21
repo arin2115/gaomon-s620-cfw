@@ -6,6 +6,9 @@ import { groupsWithLeftovers } from "../lib/ui-meta";
 import { SettingRow } from "./SettingRow";
 import { AreaEditor } from "./AreaEditor";
 
+const RECOMMENDED_URL = "s620.json";
+const PERSONAL = new Set(["AREA_X0", "AREA_X1", "AREA_Y0", "AREA_Y1", "FLIP_X", "FLIP_Y"]);
+
 type Props = { supported: boolean; onNeedFlash: () => void };
 
 export function ConfigPanel({ supported, onNeedFlash }: Props) {
@@ -105,17 +108,36 @@ export function ConfigPanel({ supported, onNeedFlash }: Props) {
     URL.revokeObjectURL(a.href);
   };
 
+  // the values of a settings export, without the ones in `skip`
+  const valuesFrom = (data: { values?: Record<string, unknown> }, skip: Set<string> = new Set()): Values => {
+    const patch: Values = {};
+    for (const s of TABLE) {
+      const v = data.values?.[s.name];
+      if (typeof v === "number" && !skip.has(s.name)) patch[s.name] = v;
+    }
+    return patch;
+  };
+
   const importJson = async (file: File) => {
     try {
-      const data = JSON.parse(await file.text());
-      const patch: Values = {};
-      for (const s of TABLE) if (typeof data.values?.[s.name] === "number") patch[s.name] = data.values[s.name];
+      const patch = valuesFrom(JSON.parse(await file.text()));
       change(patch);
       setNote(`Loaded ${Object.keys(patch).length} values from ${file.name}.`);
     } catch {
       setError("That file is not a settings export.");
     }
   };
+
+  // The recommended settings are meant for everybody, so they leave out what depends on the person: the active area and the axis mirroring.
+  const loadRecommended = () =>
+    run(async () => {
+      const r = await fetch(RECOMMENDED_URL, { cache: "no-store" });
+      if (!r.ok) throw new Error("Could not download the recommended settings.");
+      const patch = valuesFrom(await r.json(), PERSONAL);
+      if (Object.keys(patch).length === 0) throw new Error("The recommended settings file is empty or not a settings export.");
+      change(patch);
+      setNote(`Loaded ${Object.keys(patch).length} recommended values. Click "Save to tablet" to keep them.`);
+    });
 
   if (!supported) {
     return <section className="card"><p>Configuring needs WebHID, which this browser does not have.</p></section>;
@@ -138,6 +160,19 @@ export function ConfigPanel({ supported, onNeedFlash }: Props) {
           ) : (
             <button onClick={connect} disabled={busy}>Connect</button>
           )}
+        </div>
+      </section>
+
+      <section className="card connect">
+        <div>
+          <h2>Recommended settings</h2>
+          <p className="muted small">
+            For better stability, load the recommended settings, then click “Save to tablet”. They keep your active area and axis mirroring.
+            An update with a calibration tool is coming shortly.
+          </p>
+        </div>
+        <div className="btns">
+          <button onClick={loadRecommended} disabled={off}>Load recommended settings</button>
         </div>
       </section>
 
