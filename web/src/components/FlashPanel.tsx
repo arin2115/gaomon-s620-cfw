@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { DfuDevice, FLASH_SIZE, FLASH_START, requestDfuDevice, type Progress } from "../lib/dfu";
+import { identify, sha256, type TabletId } from "../lib/tablet-id";
 
 type Info = { id: string; name: string; description: string; size: number; sha256: string };
 type Blob64 = { name: string; data: Uint8Array; sha256: string };
@@ -11,11 +12,6 @@ const APP_START = FLASH_START + 0x4000;        // the bootloader below this is n
 const SETTINGS_PAGE = FLASH_START + 0xf800;    // saved settings of the custom firmware
 const FIRMWARE_URL = "api/firmware";
 const COUNTER_URL = "api/flashes";
-
-async function sha256(data: Uint8Array): Promise<string> {
-  const h = await crypto.subtle.digest("SHA-256", data as BufferSource);
-  return [...new Uint8Array(h)].map((b) => b.toString(16).padStart(2, "0")).join("");
-}
 
 const same = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.every((v, i) => v === b[i]);
 
@@ -36,6 +32,7 @@ export function FlashPanel({ supported, onFlashed }: { supported: boolean; onFla
   const [choice, setChoice] = useState<Choice>("custom");
   const [file, setFile] = useState<Blob64 | null>(null);
   const [backup, setBackup] = useState<Blob64 | null>(null);
+  const [tablet, setTablet] = useState<TabletId | null>(null);   // which tablet is connected, from its flash
   const [connected, setConnected] = useState(false);
   const [noBackup, setNoBackup] = useState(false);
   const [backupFailed, setBackupFailed] = useState(false);
@@ -111,6 +108,9 @@ export function FlashPanel({ supported, onFlashed }: { supported: boolean; onFla
     const second = await d.read(FLASH_START, FLASH_SIZE, progress, "backup");
     if (!same(first, second)) throw new Error("Two reads of the flash gave different data. Unplug the tablet, enter DFU mode again and retry.");
     if (first.every((v) => v === 0xff) || first.every((v) => v === 0)) throw new Error("The flash reads back empty: the bootloader does not allow reading it.");
+    const who = await identify(first);
+    setTablet(who);
+    say(who.isS620 ? `Gaomon S620 detected (${who.id ?? "bootloader recognised"}).` : `This is NOT a Gaomon S620 (${who.id ?? "unknown model"}).`);
     setBackup({ name: `s620_backup_${stamp()}.bin`, data: first, sha256: await sha256(first) });
     say("Backup ready. Download it before you flash.");
     setPercent(100);
@@ -141,7 +141,8 @@ export function FlashPanel({ supported, onFlashed }: { supported: boolean; onFla
   const backupOk = backup !== null || noBackup;
   const problem =
     !selected ? (choice === "file" ? "Choose a firmware file." : choice === "backup" ? "Make a backup first." : "This firmware is not available on the server.") :
-    selected.size !== FLASH_SIZE ? `The image must be exactly 64 KB (this one is ${selected.size} bytes).` : null;
+    selected.size !== FLASH_SIZE ? `The image must be exactly 64 KB (this one is ${selected.size} bytes).` :
+    tablet && !tablet.isS620 && choice !== "backup" ? `The connected tablet is not a Gaomon S620 (it reports ${tablet.id ?? "no model ID"}). This site only flashes the S620, so nothing will be written.` : null;
 
   const fetchImage = async (): Promise<Uint8Array> => {
     if (choice === "file") return file!.data;
@@ -164,6 +165,24 @@ export function FlashPanel({ supported, onFlashed }: { supported: boolean; onFla
 
       setLog([]);
       const d = await connect();
+
+      // Check the tablet itself right before writing: it may not be the one that was backed up
+      let current: Uint8Array;
+      try {
+        current = await d.read(FLASH_START, FLASH_SIZE, progress, "backup");
+      } catch (e) {
+        throw new Error(`Could not read the tablet to check that it is a Gaomon S620 (${e instanceof Error ? e.message : e}). Nothing was written.`);
+      }
+      const who = await identify(current);
+      setTablet(who);
+      if (choice === "backup") {
+        if (!same(current.subarray(0, APP_START - FLASH_START), backup!.data.subarray(0, APP_START - FLASH_START)))
+          throw new Error("This backup is from a different tablet than the one connected (the bootloaders differ). Nothing was written.");
+      } else if (!who.isS620) {
+        throw new Error(`The connected tablet is not a Gaomon S620 (it reports ${who.id ?? "no model ID"}). The firmware on this site is only for the S620, flashing it to another model can leave the pen not working. Nothing was written.`);
+      }
+      say(who.isS620 ? `Gaomon S620 confirmed (${who.id ?? "bootloader recognised"}).` : "Same tablet as the backup.");
+
       try {
         say(`Flashing ${part.length} bytes at 0x${APP_START.toString(16)} (the bootloader is not touched)${isCustom ? ", saved settings kept" : ""}`);
         await d.write(part, APP_START, progress);
@@ -243,6 +262,13 @@ export function FlashPanel({ supported, onFlashed }: { supported: boolean; onFla
           {backup && <button className="ghost" onClick={downloadBackup}>Download backup</button>}
         </div>
         {backup && <p className="muted small mono">{backup.name} · sha256 {backup.sha256}</p>}
+        {tablet && (
+          <div className={`banner ${tablet.isS620 ? "ok" : "err"}`}>
+            {tablet.isS620
+              ? `Gaomon S620 detected (${tablet.id ?? "bootloader recognised"}).`
+              : `This is not a Gaomon S620 (${tablet.id ?? "unknown model"}). The custom and original firmware on this site are only for the S620, so flashing is blocked. Keep your backup safe.`}
+          </div>
+        )}
         {!backup && backupFailed && (
           <label className="switch pad-top">
             <input type="checkbox" checked={noBackup} onChange={(e) => setNoBackup(e.target.checked)} />

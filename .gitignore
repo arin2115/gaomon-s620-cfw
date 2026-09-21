@@ -1,2 +1,3 @@
 web/firmware/**
 dist/*.py
+node_modules/

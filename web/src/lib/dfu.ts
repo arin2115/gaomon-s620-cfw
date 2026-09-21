@@ -39,7 +39,7 @@ export class DfuDevice {
     if (d.configuration === null) await d.selectConfiguration(1);
     const found = d.configuration!.interfaces.find((i) => i.alternates.some((a) => a.interfaceClass === 0xfe && a.interfaceSubclass === 0x01));
     if (!found) throw new Error("This device has no DFU interface.");
-    if (found.alternates[0].interfaceProtocol !== 2) throw new Error("The tablet is not in DFU mode (unplug it, hold buttons 1 and 4, plug it in).");
+    if (found.alternates[0].interfaceProtocol !== 2) throw new Error("The tablet is not in DFU mode (unplug it, hold all the buttons, plug it in).");
     this.iface = found.interfaceNumber;
     await d.claimInterface(this.iface);
     try {
