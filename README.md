@@ -20,8 +20,8 @@ You flash and configure it from your browser: **[tablet.itsarin.dev](https://tab
   osu!, but not for drawing.
 - No tilt and no pen side buttons.
 - The express keys only work with OpenTabletDriver, not with the Windows Ink driver alone.
-- **It is for one tablet only: the Gaomon S620 with the ID `OEM02_T18e_241030`.** Other Huion and Gaomon tablets look identical in DFU
-  mode, so before writing anything the site reads the tablet's flash and refuses to flash if that ID is not found. Nothing is written then.
+- **It is for the Gaomon S620 only** (tablet ID `OEM02_T18e_` and a date). Other Huion and Gaomon tablets look identical in DFU mode, so
+  before writing anything the site reads the tablet's flash and refuses to flash if it is not an S620. Nothing is written then.
 
 ## Installing
 

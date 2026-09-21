@@ -3,7 +3,7 @@ import { S620_BOOTLOADER_SHA256 } from "../generated/known";
 export type TabletId = { id: string | null; isS620: boolean };
 
 const ID_PATTERN = /^[A-Z0-9]{2,8}_[A-Za-z0-9]{2,6}_\d{6}$/;    // like OEM02_T18e_241030
-const S620_ID = "OEM02_T18e_241030";                            // the ID of the S620 this firmware is made for
+const S620_PATTERN = /^OEM02_T18e_\d{6}$/;                       // an S620, whatever the date of its firmware (OpenTabletDriver uses the same pattern)
 
 export async function sha256(data: Uint8Array): Promise<string> {
   const h = await crypto.subtle.digest("SHA-256", data as BufferSource);
@@ -28,6 +28,6 @@ export function findTabletId(flash: Uint8Array): string | null {
 
 export async function identify(flash: Uint8Array): Promise<TabletId> {
   const id = findTabletId(flash);
-  if (id !== null) return { id, isS620: id === S620_ID };
+  if (id !== null) return { id, isS620: S620_PATTERN.test(id) };
   return { id, isS620: (await sha256(flash.subarray(0, 0x4000))) === S620_BOOTLOADER_SHA256 };
 }
