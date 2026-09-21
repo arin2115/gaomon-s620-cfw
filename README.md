@@ -83,6 +83,11 @@ tablet, and if it comes back, please open an issue with the number.
 
 How the firmware works and how to build it is in [docs/DEVELOPER.md](docs/DEVELOPER.md). The website's code is in [web/](web/).
 
+## License
+
+GPL-3.0, see [LICENSE](LICENSE). The bootloader (`bootloader/`) and the original firmware offered on the site belong to Gaomon/Huion and are
+not covered by it.
+
 ## Disclaimer
 
 This is an unofficial project and has nothing to do with Gaomon or Huion. Flashing firmware is always a risk, use it at your own risk. The
