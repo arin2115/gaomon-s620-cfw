@@ -8,7 +8,7 @@ How the firmware is built and how it works. For installing and using it, see the
 `dist/s620.bin` is the ready-to-flash 64 KB image.
 
 ## Flashing
-1. Unplug the tablet, hold buttons 1 and 4, plug it in (DFU mode, USB ID 28E9:0189).
+1. Unplug the tablet, hold all the buttons, plug it in (DFU mode, USB ID 28E9:0189).
 2. Flash `dist/s620.bin` at address 0x08000000 with your usual flasher (verify against the same file).
 3. Unplug and plug it in again normally. To go back, flash any other image the same way.
 
