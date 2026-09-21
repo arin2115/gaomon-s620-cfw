@@ -5,6 +5,10 @@ second. This one gets close to 1000.
 
 You flash and configure it from your browser: **[tablet.itsarin.dev](https://tablet.itsarin.dev)**
 
+> **For better stability, load the recommended settings.** After flashing, download
+> [tablet.itsarin.dev/s620.json](https://tablet.itsarin.dev/s620.json), open the **Configure** tab, click **Connect**, then **Import** and
+> pick that file. Click **Save to tablet** to keep them. The defaults work, but these settings are tuned for a steadier pen.
+
 ## What you get
 
 - Up to 1000 position reports per second instead of 266.

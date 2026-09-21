@@ -1,6 +1,6 @@
 // Generates what the site needs from the firmware sources:
 //  - src/generated/settings-table.ts from ../src/settings.h (names, defaults, limits, descriptions)
-//  - public/s620.bin and public/firmware.json from ../dist
+//  - firmware/s620.bin from ../dist (served by the API, see src/server/firmware.ts)
 import { readFileSync, writeFileSync, mkdirSync, copyFileSync, existsSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
